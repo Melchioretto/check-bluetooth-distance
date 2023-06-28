@@ -1,77 +1,84 @@
 #include <BLEDevice.h>
-#include <BLEUtils.h>
+//#include <BLEUtils.h>
 #include <BLEServer.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 
-const char* ssid = "xxx";
-const char* pass = "xxx";
-const char* brokerUser = "vitormelchioretto8@gmail.com";
-const char* brokerPass = "vitor3447!$";
-const char* broker = "mqtt.dioty.co";
+const char* ssid = "melchioretto";
+const char* pass = "vitor3447";
+const char* broker = "test.mosquitto.org";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-//vitor3447!$ vitormelchioretto8@gmail.com
 
 void setupWifi(){
-  delay(100);
-  Serial.println("\nConectando em ");
+    delay(5000);
+    Serial.println("\nConectando em ");
 
-  WiFi.begin(ssid,pass);
+    WiFi.begin(ssid,pass);
 
-  while(WiFi.status() != WL_CONNECTED){
-    delay(100);
-    Serial.print("-");
-  }
-  Serial.print("\nConnected to");
-  Serial.println(ssid);
+    while(WiFi.status() != WL_CONNECTED){
+        delay(5000);
+        Serial.print("-");
+    }
+    Serial.print("\nConnected to ");
+    Serial.println(ssid);
 }
 
 void reconnect(){
-  while(!client.connected()){
-    Serial.print("\nConnecting to");
-    Serial.println(broker);
-    if(client.connect("Melchioretto", brokerUser, brokerPass)){
-      Serial.print("\nConnected to");
-      Serial.println(broker);
-    }else{
-      Serial.println("\nTentando conectar dnv ");
-      delay(5000);
+    while(!client.connected()){
+        Serial.print("\nConnecting to");
+        Serial.println(broker);
+        if(client.connect("Melchioretto")){
+        Serial.print("\nConnected to");
+        Serial.println(broker);
+        }else{
+        Serial.println("\nTentando conectar dnv ");
+        delay(5000);
+        }
     }
-  }
 }
 
 int deviceCount = 0;
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    deviceCount++;
-    Serial.print("Endereço: ");
-    Serial.println(advertisedDevice.getAddress().toString().c_str());
-    Serial.print(" dBm, Distância: ");
-    Serial.print(calculateDistance(advertisedDevice.getRSSI()));
-    Serial.println(" metros");
-    Serial.println("--------------------");
-  }
-  
-  float calculateDistance(int rssi) {
-    int txPower = -59; // RSSI na distância de 1 metro
-    float ratio = rssi * 1.0 / txPower;
-    if (ratio < 1.0) {
-      return pow(ratio, 10);
-    } else {
-      float distance = (0.89976) * pow(ratio, 7.7095) + 0.111;
-      return distance;
+    int rssi = advertisedDevice.getRSSI();
+    float distance = calculateDistance(rssi);
+
+    if (distance <= 10.0) { // Verifica se a distância é menor ou igual a 10 metros
+        deviceCount++;
+        Serial.print("Nome: ");
+        Serial.println(advertisedDevice.getName().c_str());
+        Serial.print("Endereço: ");
+        Serial.println(advertisedDevice.getAddress().toString().c_str());
+        Serial.print("RSSI: ");
+        Serial.print(rssi);
+        Serial.print(" dBm, Distância: ");
+        Serial.print(distance);
+        Serial.println(" metros");
+        Serial.println("--------------------");
     }
-  }
+    }
+    
+    float calculateDistance(int rssi) {
+        int txPower = -59; // RSSI na distância de 1 metro
+        float ratio = rssi * 1.0 / txPower;
+        if (ratio < 1.0) {
+        return pow(ratio, 10);
+        } else {
+        float distance = (0.89976) * pow(ratio, 7.7095) + 0.111;
+        return distance;
+        }
+    }
 };
 
 BLEServer *pServer = NULL;
 bool deviceConnected = false;
-
+BLEScan* pBLEScan = NULL ;
 void setup() {
   Serial.begin(115200);
+  delay(5000);
   setupWifi();
   client.setServer(broker, 1883);
   // Inicializa o BLE
@@ -103,30 +110,33 @@ void setup() {
   pAdvertising->setMinPreferred(0x12);
 
   Serial.println("ESP32 iniciado e descobrível como 'ESP32'");
-}
 
-void loop() {
+//=======================
   // Configura a digitalização e a contagem de dispositivos
-  BLEScan* pBLEScan = BLEDevice::getScan();
+  pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   pBLEScan->setActiveScan(true);
 
-  // Inicia a digitalização
-  BLEScanResults foundDevices = pBLEScan->start(5);
-
-  // Exibe a contagem de dispositivos encontrados
-  if (deviceCount > 0) {
-    Serial.print("Número de dispositivos Bluetooth encontrados: ");
-    Serial.println(deviceCount);
-  }
   
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();
-  
-  // Reinicia a contagem para a próxima digitalização
-  deviceCount = 0;
+}
 
-  delay(12000);
+void loop() {
+  
+
+    // Exibe a contagem de dispositivos encontrados
+    if (deviceCount > 0) {
+        Serial.print("Número de dispositivos Bluetooth encontrados: ");
+        Serial.println(deviceCount);
+    }
+    delay(10000);
+    //aq
+    if (!client.connected()) {
+        reconnect();
+    }
+    client.loop();
+    client.publish("tomviado", "PEGA NA CHAMPOLA", 30);
+    // Reinicia a contagem para a próxima digitalização
+    deviceCount = 0;
+
+    delay(5000);
 }
