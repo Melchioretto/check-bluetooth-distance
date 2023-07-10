@@ -34,6 +34,8 @@ Para fazer os LEDs funcionarem na protoboard, siga as seguintes conexões:
 
 Conecte o fio positivo do LED à porta G13 do ESP32 da WROOM.
 Conecte o fio negativo do LED à porta GND do ESP32 da WROOM.
+![C4](assets/gis-montagem.jpg)
+
 Carregando o Código
 Após realizar todas as configurações acima e conectar corretamente o ESP32, faça o upload do código fornecido para o ESP32 usando a IDE do Arduino.
 
